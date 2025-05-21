@@ -1,0 +1,32 @@
+{
+  "name": "multi-agent-system",
+  "version": "1.0.0",
+  "description": "Multi-agent system using LangChain agents and LangGraph for orchestration",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "setup": "cp .env.example .env"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.2.0",
+    "@langchain/community": "^0.0.34",
+    "@langchain/core": "^0.1.63",
+    "@langchain/google-genai": "^0.0.10",
+    "@langchain/langgraph": "^0.0.8",
+    "@langchain/openai": "^0.0.14",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.1",
+    "express": "^4.18.2",
+    "faiss-node": "^0.5.1",
+    "google-search-results-nodejs": "^2.1.0",
+    "langchain": "^0.1.23",
+    "mammoth": "^1.6.0",
+    "marked": "^7.0.5",
+    "node-fetch": "^2.7.0",
+    "pdf-parse": "^1.1.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  }
+}

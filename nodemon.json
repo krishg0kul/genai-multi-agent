@@ -1,0 +1,11 @@
+{
+  "ignore": [
+    "src/vectorstores/*",
+    "vectorstores/*",
+    "*.faiss",
+    "*.pkl"
+  ],
+  "watch": [
+    "src"
+  ]
+} 
