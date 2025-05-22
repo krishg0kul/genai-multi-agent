@@ -1,11 +1,12 @@
 const GenerateResponseTool = require('../utils/GenerateResponseTool');
+const dotenv = require('dotenv');
+dotenv.config();
 
 class BaseAgent {
   constructor(config) {
     this.config = config;
-    
     this.responseGenerator = new GenerateResponseTool({
-      apiKey: process.env.GOOGLE_API_KEY || 'AIzaSyAz5QPizZs3yeMEpm-7apKZw7mvFqVkTPQ',
+      apiKey: process.env.GEMINI_API_KEY,
       modelName: "gemini-1.5-flash",
       temperature: config?.llm?.temperature || 0.7
     });
@@ -20,14 +21,6 @@ class BaseAgent {
     }
   }
 
-  // Helper method to format prompt template with variables
-  formatPrompt(template, variables) {
-    let formattedPrompt = template;
-    for (const [key, value] of Object.entries(variables)) {
-      formattedPrompt = formattedPrompt.replace(`{${key}}`, value);
-    }
-    return formattedPrompt;
-  }
 }
 
 module.exports = BaseAgent; 

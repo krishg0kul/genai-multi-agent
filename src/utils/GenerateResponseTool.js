@@ -1,18 +1,20 @@
 const { Tool } = require('@langchain/core/tools');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const dotenv = require('dotenv');
+dotenv.config();
 
 class GenerateResponseTool extends Tool {
-  constructor() {
+  constructor(config = {}) {
     super({
         name: "generate response",
         description: "Generates a response from the model"
       });
     
-    this.genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || 'AIzaSyAz5QPizZs3yeMEpm-7apKZw7mvFqVkTPQ');
+    this.genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     this.model = this.genAI.getGenerativeModel({
-      model: process.env.GOOGLE_MODEL_NAME || 'gemini-1.5-flash',
+      model: "gemini-1.5-flash",
       generationConfig: {
-        temperature: 0.7,
+        temperature: config?.temperature || 0.7,
         maxOutputTokens: 1024,
       },
     });

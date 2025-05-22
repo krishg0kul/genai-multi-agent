@@ -85,7 +85,6 @@ class AgentService {
     };
 
     const webSearchNode = async (state) => {
-      console.log('Web Search Agent processing query:', state.query);
       const response = await this.WEB_SEARCH.processQuery(state.query);
       return {
         ...state,
