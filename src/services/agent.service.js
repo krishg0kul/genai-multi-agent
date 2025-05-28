@@ -149,7 +149,6 @@ class AgentService {
     graph.addNode("finance", financeNode);
     graph.addNode("websearch", webSearchNode);
 
-    // Add edges
     graph.addConditionalEdges("router", routeToAgents);
     graph.addConditionalEdges("it", routeToAgents);
     graph.addConditionalEdges("hr", routeToAgents);
@@ -162,6 +161,28 @@ class AgentService {
     return graph.compile();
   }
 
+  async generateResponseSummary(responses) {
+    const prompt = `
+      Create a concise, well-organized summary of the following responses from different departments:
+      Responses: ${JSON.stringify(responses)}
+
+      Instructions:
+      1. Keep the response agent name at the beginning of the summary
+      1. Combine the information into a cohesive, paragraph-based summary 
+      2. Maintain all important details but eliminate redundancy
+      3. Organize related information together regardless of source
+      5. Keep a professional and consistent tone throughout
+      6. Use line breaks to separate different topics
+    `;
+
+    try {
+      return await this.router.generateResponse(prompt);
+    } catch (error) {
+      console.error('Error generating response summary:', error);
+      return Object.values(responses).join('\n\n');
+    }
+  }
+
   async processQuery(query) {
     try {
       const result = await this.graph.invoke({
@@ -170,18 +191,24 @@ class AgentService {
       });
       console.log('Graph execution complete with result:', result);
 
+      const responseSummary = await this.generateResponseSummary(result.responses);
+
       return {
-        responses: result.responses,
+        // responses: result.responses,
         agents: result.processedAgents,
-        reasoning: result.reasoning
+        reasoning: result.reasoning,
+        responseSummary
       };
     } catch (error) {
       console.error('Error processing query through agent graph:', error);
       const fallbackResponse = await this.WEB_SEARCH.processQuery(query);
+      const responseSummary = await this.generateResponseSummary({ WEB_SEARCH: fallbackResponse });
+      
       return {
         responses: { WEB_SEARCH: fallbackResponse },
         agents: ['WEB_SEARCH'],
-        reasoning: 'Fallback due to error in agent graph'
+        reasoning: 'Fallback due to error in agent graph',
+        responseSummary
       };
     }
   }

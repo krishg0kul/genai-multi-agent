@@ -41,7 +41,9 @@ class RouterAgent extends BaseAgent {
       const reasoningPrompt = `
         You are a router agent that has decided to route this query:
         "${query}"
-        
+
+        Available agents descriptions : ${agentOptions}
+
         to the following agent(s): ${decidedAgents.join(", ")}
         
         Please provide a brief explanation of why these agents are appropriate.

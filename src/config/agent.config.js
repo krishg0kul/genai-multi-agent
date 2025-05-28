@@ -9,7 +9,7 @@ const AGENT_WITH_DESCRIPTIONS = [
   },
   {
     name: "FINANCE",
-    description: "Finance Agent: budget questions, expenses, financial reports, accounting, investments, financial planning, reimbursement queries"
+    description: "Finance Agent: budget questions, expenses, financial reports, accounting, investments, financial planning, reimbursement queries, allowances"
   },
   {
     name: "WEB_SEARCH",
