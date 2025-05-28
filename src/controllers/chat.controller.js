@@ -14,11 +14,7 @@ class ChatController {
       console.log(`Processing user message: "${message}"`);
       const result = await agentService.processQuery(message);
       
-      res.json({
-        agent: result.agent,
-        response: result.response,
-        reasoning: result.reasoning
-      });
+      res.json(result);
     } catch (error) {
       console.error('Error processing chat:', error);
       res.status(500).json({ 

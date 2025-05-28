@@ -5,8 +5,8 @@ module.exports = {
   vectorStorePath: path.join(process.cwd(), 'src', 'vectorstores'),
   
   // Text splitting settings
-  chunkSize: 1000,
-  chunkOverlap: 200,
+  chunkSize: 500,
+  chunkOverlap: 100,
   
   // Domain settings
   domains: ['hr', 'it', 'finance'],

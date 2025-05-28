@@ -1,12 +1,14 @@
 const BaseAgent = require('./BaseAgent');
 const DocumentService = require('../services/document.service');
 const WebSearchAgent = require('./WebSearchAgent');
+const { getAgentDescription } = require('../config/agent.config');
 
 class FinanceAgent extends BaseAgent {
   constructor(config) {
     super(config);
     this.domain = 'finance';
     this.webSearchAgent = new WebSearchAgent(config);
+    this.description = getAgentDescription("FINANCE");
   }
 
   async processQuery(query, context = {}) {
@@ -18,23 +20,30 @@ class FinanceAgent extends BaseAgent {
       
       let documentContext = '';
       if (relevantDocs.length > 0) {
-        documentContext = relevantDocs.map(doc => doc.pageContent).join('\n\n');
+        const sortedDocs = relevantDocs.sort((a, b) => 
+          (a.metadata.chunkIndex || 0) - (b.metadata.chunkIndex || 0)
+        );
+        documentContext = sortedDocs.map(doc => doc.pageContent).join('\n\n');
       }
       
       // Enhanced prompt with document context
       const prompt = `
-        You are a Finance professional responding to the following financial question:
+        You are a Finance professional responding to a question about financial matters.
+        Your scope: ${this.description}
         
-        QUESTION: ${query}
+        QUESTION: "${query}"
         
-        ${documentContext ? `RELEVANT DOCUMENTATION:\n${documentContext}` : 'No specific financial policies available.'}
+        RELEVANT DOCUMENTATION:
+        ${documentContext || 'No specific financial policies available.'}
         
-        First, check if the documentation contains specific information to answer the question.
-        If the documentation does not contain the specific information needed, respond with "FALLBACK_TO_WEB_SEARCH".
-        If the documentation contains relevant information, provide a clear, accurate response.
-        Reference specific financial policies when applicable.
+        Instructions:
+        1. Look for ANY relevant financial information in the documentation that relates to the query
+        2. If you find information about reimbursement, expenses, or financial policies, include it in your response
+        3. If you find the "Non-Reimbursable Items" section, make sure to list those items
+        4. Only respond with "FALLBACK_TO_WEB_SEARCH" if there is absolutely no relevant financial information
+        5. Even if the query mentions non-financial topics, focus on providing any financial-related information you can find
         
-        Keep your answer concise and directly address the question asked.
+        Format your response to clearly separate different policy sections if multiple are relevant.
       `;
       
       // Generate response from the AI model
