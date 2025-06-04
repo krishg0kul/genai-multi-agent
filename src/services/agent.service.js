@@ -64,7 +64,7 @@ class AgentService {
     const graph = new Graph();
 
     const routerNode = async (state) => {
-      const routingResult = await this.router.decideAgent(state.query);
+      const routingResult = await this.router.decideAgent(state.query, state.chatHistory);
       console.log('Router decided to use agents:', routingResult.agents);
       return {
         ...state,
@@ -76,7 +76,7 @@ class AgentService {
     };
 
     const itNode = async (state) => {
-      const response = await this.IT.processQuery(state.query);
+      const response = await this.IT.processQuery(state.query, state.chatHistory);
       const cleanedResponse = await this.cleanAgentResponse('IT', response);
       return {
         ...state,
@@ -86,7 +86,7 @@ class AgentService {
     };
 
     const hrNode = async (state) => {
-      const response = await this.HR.processQuery(state.query);
+      const response = await this.HR.processQuery(state.query, state.chatHistory);
       const cleanedResponse = await this.cleanAgentResponse('HR', response);
       return {
         ...state,
@@ -96,7 +96,7 @@ class AgentService {
     };
 
     const financeNode = async (state) => {
-      const response = await this.FINANCE.processQuery(state.query);
+      const response = await this.FINANCE.processQuery(state.query, state.chatHistory);
       const cleanedResponse = await this.cleanAgentResponse('FINANCE', response);
       return {
         ...state,
@@ -106,7 +106,7 @@ class AgentService {
     };
 
     const webSearchNode = async (state) => {
-      const response = await this.WEB_SEARCH.processQuery(state.query);
+      const response = await this.WEB_SEARCH.processQuery(state.query, state.chatHistory);
       const cleanedResponse = await this.cleanAgentResponse('WEB_SEARCH', response);
       return {
         ...state,
@@ -161,18 +161,60 @@ class AgentService {
     return graph.compile();
   }
 
+  containsClarifyingQuestion(response) {
+    // Check if a response contains a clarifying question (ends with a question mark)
+    return typeof response === 'string' && response.trim().endsWith('?');
+  }
+
   async generateResponseSummary(responses) {
+    // Check if any of the responses contain a clarifying question
+    // const agentsWithQuestions = Object.entries(responses)
+    //   .filter(([_, response]) => this.containsClarifyingQuestion(response))
+    //   .map(([agent, _]) => agent);
+    
+    // // If there are clarifying questions, prioritize them
+    // if (agentsWithQuestions.length > 0) {
+    //   console.log(`Found clarifying questions from agents: ${agentsWithQuestions.join(', ')}`);
+      
+    //   // If there's only one agent with a question, return its response directly
+    //   if (agentsWithQuestions.length === 1) {
+    //     const agent = agentsWithQuestions[0];
+    //     return responses[agent];
+    //   }
+      
+    //   // If multiple agents have questions, combine them
+    //   const questionPrompt = `
+    //     Multiple agents have clarifying questions for the user:
+    //     ${agentsWithQuestions.map(agent => `${agent}: ${responses[agent]}`).join('\n\n')}
+        
+    //     Please combine these questions into a single, comprehensive clarifying question that addresses all the ambiguities identified by the different agents.
+    //     Make the question conversational and helpful, offering options when possible.
+        
+    //     Your response should be ONLY the combined clarifying question, without any additional text.
+    //   `;
+      
+    //   try {
+    //     return await this.router.generateResponse(questionPrompt);
+    //   } catch (error) {
+    //     console.error('Error generating combined clarifying question:', error);
+    //     // Fall back to the first agent's question
+    //     return responses[agentsWithQuestions[0]];
+    //   }
+    // }
+    
+    // If no clarifying questions, proceed with normal summary
     const prompt = `
       Create a concise, well-organized summary of the following responses from different departments:
       Responses: ${JSON.stringify(responses)}
 
       Instructions:
       1. Keep the response agent name at the beginning of the summary
-      1. Combine the information into a cohesive, paragraph-based summary 
-      2. Maintain all important details but eliminate redundancy
-      3. Organize related information together regardless of source
+      2. Combine the information into a cohesive, paragraph-based summary 
+      3. Maintain all important details but eliminate redundancy
+      4. Organize related information together regardless of source
       5. Keep a professional and consistent tone throughout
       6. Use line breaks to separate different topics
+      7. If the response contains conversation history or meta-information, preserve that context
     `;
 
     try {
@@ -183,35 +225,37 @@ class AgentService {
     }
   }
 
-  async processQuery(query) {
+  async processQuery(query, chatHistory = []) {
     try {
       const result = await this.graph.invoke({
         query: query,
+        chatHistory: chatHistory,
         complete: false
       });
-      console.log('Graph execution complete with result:', result);
+      // console.log('Graph execution complete with result:', result);
 
-      const responseSummary = await this.generateResponseSummary(result.responses);
+      let responseSummary = await this.generateResponseSummary(result.responses);
 
       return {
-        // responses: result.responses,
         agents: result.processedAgents,
         reasoning: result.reasoning,
-        responseSummary
+        responseSummary,
+        // relatedMemory: chatHistory
       };
     } catch (error) {
       console.error('Error processing query through agent graph:', error);
-      const fallbackResponse = await this.WEB_SEARCH.processQuery(query);
+      const fallbackResponse = await this.WEB_SEARCH.processQuery(query, chatHistory);
       const responseSummary = await this.generateResponseSummary({ WEB_SEARCH: fallbackResponse });
       
       return {
         responses: { WEB_SEARCH: fallbackResponse },
         agents: ['WEB_SEARCH'],
         reasoning: 'Fallback due to error in agent graph',
-        responseSummary
+        responseSummary,
+        // relatedMemory: chatHistory
       };
     }
   }
 }
 
-module.exports = new AgentService(); 
+module.exports = new AgentService();

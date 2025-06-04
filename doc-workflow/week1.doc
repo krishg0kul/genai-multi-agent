@@ -1,0 +1,47 @@
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor': '#ffffff', 'primaryTextColor': '#000000', 'primaryBorderColor': '#000000', 'lineColor': '#000000', 'secondaryColor': '#ffffff', 'tertiaryColor': '#ffffff', 'background': '#ffffff', 'mainBkg': '#ffffff'}}}%%
+flowchart TD
+    A[User Query] --> B[Router Agent]
+    B --> C{Query Type?}
+    
+    C -->|IT Related| D[IT Agent]
+    C -->|HR Related| E[HR Agent]  
+    C -->|Finance Related| F[Finance Agent]
+    C -->|General| G[Web Search Agent]
+    
+    D --> H[Search]
+    E --> I[Search]
+    F --> J[Search]
+    
+    H --> K{IT Docs Found?}
+    I --> L{HR Docs Found?}
+    J --> M{Finance Docs Found?}
+    
+    K -->|Yes| N[IT Response]
+    K -->|No| G
+    K -->|Error| G
+    
+    L -->|Yes| O[HR Response]
+    L -->|No| G
+    L -->|Error| G
+    
+    M -->|Yes| P[Finance Response]
+    M -->|No| G
+    M -->|Error| G
+    
+    G --> Q[Web Search Response]
+    
+    N --> R[Final Response]
+    O --> R
+    P --> R
+    Q --> R
+
+    %% Styling
+    classDef blueNodes fill:#87CEEB,stroke:#000,stroke-width:2px,color:#000
+    classDef yellowNodes fill:#FFFF99,stroke:#000,stroke-width:2px,color:#000
+    classDef pinkNodes fill:#FFB6C1,stroke:#000,stroke-width:2px,color:#000
+    classDef greenNodes fill:#90EE90,stroke:#000,stroke-width:2px,color:#000
+    
+    class A,B blueNodes
+    class D,E,F,G yellowNodes
+    class C,K,L,M pinkNodes
+    class N,O,P,Q,R greenNodes

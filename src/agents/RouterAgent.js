@@ -7,15 +7,25 @@ class RouterAgent extends BaseAgent {
     this.agentDescriptions = AGENT_WITH_DESCRIPTIONS;
   }
 
-  async decideAgent(query) {
+  async decideAgent(query, chatHistory = []) {
     try {
+      
       const agentOptions = this.agentDescriptions.map(agent => agent.description).join("\n");
+      
+      // Format chat history
+      const formattedHistory = chatHistory.length > 0 
+        ? chatHistory.map(item => 
+            item.memory ? `- ${item.memory}` : item.content
+          ).join('\n')
+        : '';
       
       const prompt = `
         You are a router agent that determines which specialized agent(s) should handle a user query.
         You can select multiple agents if the query requires expertise from different domains.
         
-        USER QUERY: "${query}"
+        Previous Chat Information: ${formattedHistory}
+        
+        CURRENT QUERY: "${query}"
         
         AVAILABLE AGENTS:
         ${agentOptions}
@@ -25,9 +35,11 @@ class RouterAgent extends BaseAgent {
         1. The primary domain of the query
         2. Any secondary or related domains that might provide valuable input
         3. Whether multiple perspectives would give a more complete answer
+        4. The context from previous conversation, if any
+        5. If this appears to be a follow-up to a previous question, consider routing to the same agent
         
         INSTRUCTIONS:
-        1. Analyze the query to understand all required domains of expertise
+        1. Analyze the query and conversation history to understand all required domains of expertise
         2. Choose one or more appropriate agents from the list above
         3. List the agents in order of relevance/importance
         4. Respond with ONLY the agent names, separated by commas (e.g., "IT, HR" or "FINANCE" or "IT, FINANCE, WEB_SEARCH")
@@ -42,11 +54,14 @@ class RouterAgent extends BaseAgent {
         You are a router agent that has decided to route this query:
         "${query}"
 
-        Available agents descriptions : ${agentOptions}
+        Previous Chat Information: ${formattedHistory}
+
+        Available agents descriptions: ${agentOptions}
 
         to the following agent(s): ${decidedAgents.join(", ")}
         
         Please provide a brief explanation of why these agents are appropriate.
+        Consider both the current query and any relevant context from previous conversation.
         If multiple agents were chosen, explain why the combination is beneficial.
         Keep your explanation under 100 words.
       `;
@@ -101,4 +116,4 @@ class RouterAgent extends BaseAgent {
   }
 }
 
-module.exports = RouterAgent; 
+module.exports = RouterAgent;

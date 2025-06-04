@@ -12,8 +12,16 @@ class BaseAgent {
     });
   }
 
-  async generateResponse(prompt) {
+  async generateResponse(prompt, chatHistory = []) {
     try {
+      // Format chat history if available
+      // const formattedHistory = chatHistory.length > 0 
+      //   ? '\nPrevious conversation:\n' + chatHistory.map(msg => 
+      //       `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
+      //     ).join('\n')
+      //   : '';
+
+      // const fullPrompt = `${prompt}${formattedHistory}`;
       return await this.responseGenerator._call(prompt);
     } catch (error) {
       console.error('Error in BaseAgent.generateResponse:', error);
@@ -21,6 +29,10 @@ class BaseAgent {
     }
   }
 
+  async processQuery(query, chatHistory = []) {
+    // This method should be overridden by child classes
+    throw new Error('processQuery method must be implemented by child classes');
+  }
 }
 
 module.exports = BaseAgent; 
