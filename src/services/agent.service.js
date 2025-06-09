@@ -107,7 +107,14 @@ class AgentService {
 
     const webSearchNode = async (state) => {
       const response = await this.WEB_SEARCH.processQuery(state.query, state.chatHistory);
-      const cleanedResponse = await this.cleanAgentResponse('WEB_SEARCH', response);
+      
+      // Skip cleaning for history-related queries
+      const isHistoryQuery = state.query.toLowerCase().includes("last question") || 
+                            state.query.toLowerCase().includes("previous question") ||
+                            state.query.toLowerCase().includes("what did i ask");
+      
+      const cleanedResponse = isHistoryQuery ? response : await this.cleanAgentResponse('WEB_SEARCH', response);
+      
       return {
         ...state,
         responses: { ...state.responses, WEB_SEARCH: cleanedResponse },

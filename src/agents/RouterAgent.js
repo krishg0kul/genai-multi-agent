@@ -98,11 +98,12 @@ class RouterAgent extends BaseAgent {
         continue;
       }
       
-      // Check for partial matches
-      if (potentialAgent.includes("IT")) selectedAgents.add("IT");
-      if (potentialAgent.includes("HR")) selectedAgents.add("HR");
-      if (potentialAgent.includes("FINANCE")) selectedAgents.add("FINANCE");
-      if (potentialAgent.includes("WEB") || potentialAgent.includes("SEARCH")) {
+      // Check for partial matches - but only if they're standalone words
+      // This prevents matching "IT" in words like "BENEFITS" or "SECURITY"
+      if (potentialAgent === "IT") selectedAgents.add("IT");
+      if (potentialAgent === "HR") selectedAgents.add("HR");
+      if (potentialAgent === "FINANCE") selectedAgents.add("FINANCE");
+      if (potentialAgent === "WEB" || potentialAgent === "SEARCH" || potentialAgent === "WEB_SEARCH") {
         selectedAgents.add("WEB_SEARCH");
       }
     }

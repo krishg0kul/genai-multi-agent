@@ -13,11 +13,11 @@ const AGENT_WITH_DESCRIPTIONS = [
   },
   {
     name: "WEB_SEARCH",
-    description: "Web Search Agent: general information, facts, current events, or anything not fitting the other categories"
+    description: "Web Search Agent: general information, facts, current events, conversation history, previous messages, or anything not fitting the other categories"
   }
 ];
 
 module.exports = {
   AGENT_WITH_DESCRIPTIONS,
   getAgentDescription: (agentName) => AGENT_WITH_DESCRIPTIONS.find(agent => agent.name === agentName)?.description
-}; 
+};

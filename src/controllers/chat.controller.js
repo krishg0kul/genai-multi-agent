@@ -15,7 +15,8 @@ class ChatController {
 
       console.log(`Processing user message: \"${message}\"`);
       
-      const memoryResults = await memoryService.searchMemory(message, userId, false);
+      const memoryResults = await memoryService.getAllMemory(userId);
+      // const memoryResults = await memoryService.getRecentHistory(userId);
       
       const result = await agentService.processQuery(message, memoryResults);
       

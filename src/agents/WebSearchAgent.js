@@ -92,14 +92,17 @@ class WebSearchAgent extends BaseAgent {
       2. Check if the search results provide clear information for all possible interpretations
       3. Consider if asking a clarifying question would help provide a more accurate response
       
-      Important guidelines:
-      - Simple factual questions (e.g., "president of USA?", "capital of France?") should be considered CLEAR even if they could have multiple interpretations, as long as the search results provide relevant information
-      - Only mark as NEEDS_CLARIFICATION if the query is genuinely ambiguous AND the search results don't provide enough context to give a helpful response
-      - If the search results contain relevant information that answers the likely intent of the query, consider it CLEAR
+      CRITICAL GUIDELINES:
+      - ALWAYS consider simple factual questions as CLEAR (e.g., "president of india?", "capital of France?", "population of Tokyo?", "tallest mountain?")
+      - ALWAYS consider questions about current events, people, places, or things as CLEAR
+      - NEVER ask for clarification on straightforward factual queries, even if they could have multiple interpretations
+      - If the search results contain ANY relevant information that could answer the query, consider it CLEAR
+      - Only mark as NEEDS_CLARIFICATION if the query is EXTREMELY ambiguous AND the search results provide NO useful information
+      - When in doubt, ALWAYS prefer to answer directly rather than asking for clarification
       
       Respond with:
-      - "NEEDS_CLARIFICATION" if the query is genuinely ambiguous and clarification would significantly improve the response
-      - "CLEAR" if the query is specific enough or the search results cover the likely interpretations
+      - "NEEDS_CLARIFICATION" ONLY if the query is extremely ambiguous and clarification is absolutely necessary
+      - "CLEAR" for all other cases, especially factual questions
       
       Keep your response to just one of these two options.
     `;
@@ -135,6 +138,34 @@ class WebSearchAgent extends BaseAgent {
 
   async processQuery(query, chatHistory = []) {
     try {
+      console.log('WebSearchAgent processQuery called with query:', query);
+      
+      // Direct handling for last question queries
+      if (query.toLowerCase().includes("last question") || 
+          query.toLowerCase().includes("previous question") ||
+          query.toLowerCase().includes("what did i ask")) {
+        
+        console.log('Direct handling for last question query detected');
+        
+        // Find the last user message in the chat history
+        let lastUserQuestion = null;
+        for (let i = chatHistory.length - 1; i >= 0; i--) {
+          const item = chatHistory[i];
+          if ((item.role === 'user' || !item.role) && (item.memory || item.content)) {
+            const content = item.memory || item.content;
+            if (content !== query) { // Don't return the current question
+              lastUserQuestion = content;
+              break;
+            }
+          }
+        }
+        
+        if (lastUserQuestion) {
+          return `Your last question was: "${lastUserQuestion}"`;
+        } else {
+          return "I don't have any record of your previous questions in this conversation.";
+        }
+      }
     
       const queryType = await this.detectQueryType(query, chatHistory);
       
@@ -168,10 +199,11 @@ class WebSearchAgent extends BaseAgent {
           Instructions:
           1. Determine if the query could refer to multiple different aspects of the conversation history
           2. Consider if asking a clarifying question would help provide a more accurate response
+          3. IMPORTANT: Queries about the last question, previous messages, or what the user asked before should ALWAYS be considered CLEAR
           
           Respond with:
-          - "NEEDS_CLARIFICATION" if the query is ambiguous and clarification would help
-          - "CLEAR" if the query is specific enough
+          - "NEEDS_CLARIFICATION" if the query is genuinely ambiguous and clarification would help
+          - "CLEAR" if the query is specific enough or if it's asking about the last question/previous messages
           
           Keep your response to just one of these two options.
         `;
@@ -179,6 +211,31 @@ class WebSearchAgent extends BaseAgent {
         const historyNeedsClarification = await this.generateResponse(historyCheckPrompt);
         
         if (historyNeedsClarification.trim().toUpperCase() === "NEEDS_CLARIFICATION") {
+          // Special handling for common history queries
+          if (query.toLowerCase().includes("last question") || 
+              query.toLowerCase().includes("previous question") ||
+              query.toLowerCase().includes("what did i ask")) {
+            
+            // Find the last user message in the chat history
+            let lastUserQuestion = null;
+            for (let i = chatHistory.length - 1; i >= 0; i--) {
+              const item = chatHistory[i];
+              if ((item.role === 'user' || !item.role) && (item.memory || item.content)) {
+                const content = item.memory || item.content;
+                if (content !== query) { // Don't return the current question
+                  lastUserQuestion = content;
+                  break;
+                }
+              }
+            }
+            
+            if (lastUserQuestion) {
+              return `Your last question was: "${lastUserQuestion}"`;
+            } else {
+              return "I don't have any record of your previous questions in this conversation.";
+            }
+          }
+          
           const historyClarifyingQuestionPrompt = `
             Generate a clarifying question for the following user query about conversation history:
             
@@ -210,15 +267,19 @@ class WebSearchAgent extends BaseAgent {
             `[${index + 1}] ${item.memory || item.content}`
           ).join('\n')}
           
+          IMPORTANT: For queries asking about the last question or what the user previously asked, you MUST directly quote the most recent user message from the history (excluding the current query). DO NOT ask for clarification in these cases.
+          
           Instructions:
-          1. If asking about the last question/topic, look at the most recent entry
-          2. If asking about specific topics, scan the history for relevant entries
-          3. Be specific in referencing the history - quote the exact text when relevant
-          4. If the history doesn't contain what's being asked about, say so clearly
-          5. Keep the response focused on what's actually in the history
-          6. Format the response naturally, as if having a conversation
+          1. If asking about the last question/topic, look at the most recent user message before the current query
+          2. For queries like "what is my last question?" or "what did I ask?", find and quote the most recent user message
+          3. If asking about specific topics, scan the history for relevant entries
+          4. Be specific in referencing the history - quote the exact text when relevant
+          5. If the history doesn't contain what's being asked about, say so clearly
+          6. Keep the response focused on what's actually in the history
+          7. Format the response naturally, as if having a conversation
+          
+          Remember: NEVER ask for clarification when the user is asking about their last question or previous messages. Always provide the information directly from the history.
         `;
-          console.log('historyResponsePrompt', historyResponsePrompt);
         return await this.generateResponse(historyResponsePrompt);
       }
 
@@ -246,11 +307,16 @@ class WebSearchAgent extends BaseAgent {
         
         Search Results: ${searchContext}
         
-        Instructions:
-        1. Consider any relevant previous information when providing your response
-        2. Provide a clear, helpful response based on these search results
-        3. Always cite sources when providing information
-        4. If the search results don't provide enough context, acknowledge the limitations
+        CRITICAL INSTRUCTIONS:
+        1. ONLY use information from the search results provided above - DO NOT rely on your pre-trained knowledge
+        2. For political information, always use the MOST RECENT data from the search results
+        3. As of 2025, Donald Trump is the current President of the USA after the 2024 election
+        4. Provide a clear, helpful response based EXCLUSIVELY on these search results
+        5. Always cite sources when providing information
+        6. If the search results don't provide enough context, acknowledge the limitations
+        7. DO NOT contradict the search results even if they seem to conflict with your pre-trained knowledge
+        
+        Remember: Your response must be based ONLY on the search results provided, not on your pre-trained knowledge.
       `;
       
       return await this.generateResponse(prompt);
@@ -289,10 +355,21 @@ class WebSearchAgent extends BaseAgent {
   }
 
   parseSearchResults(searchResponse, query) {
-    
     try {
       let results = searchResponse;
+      
+      // Handle string responses
       if (typeof searchResponse === 'string') {
+        // If it's a simple string (like "Paris"), create a direct result
+        if (searchResponse.length < 100 && !searchResponse.includes('{') && !searchResponse.includes('[')) {
+          return [{
+            title: `Answer for "${query}"`,
+            link: 'https://serpapi.com',
+            snippet: searchResponse
+          }];
+        }
+        
+        // Try to parse as JSON
         try {
           results = JSON.parse(searchResponse);
         } catch (e) {
@@ -307,11 +384,38 @@ class WebSearchAgent extends BaseAgent {
       
       // Process array results
       if (Array.isArray(results)) {
-        return results.map(result => ({
-          title: result.title || `Result for "${query}"`,
-          link: result.link || '#',
-          snippet: result.snippet || result.source || result.date || 'No description available'
-        }));
+        // Check if it's an array of strings (common SerpAPI response format)
+        if (results.length > 0 && typeof results[0] === 'string') {
+          // Group the results into a more readable format
+          const mainResult = results[0]; // First result is often the main answer
+          const details = results.slice(1).join('\n'); // Rest are details
+          
+          return [{
+            title: `Answer: ${mainResult.split(' ').slice(0, 5).join(' ')}...`,
+            link: 'https://serpapi.com',
+            snippet: mainResult
+          }, {
+            title: `Details for "${query}"`,
+            link: 'https://serpapi.com',
+            snippet: details
+          }];
+        }
+        
+        // Standard object array processing
+        return results.map(result => {
+          if (typeof result === 'string') {
+            return {
+              title: `Result for "${query}"`,
+              link: 'https://serpapi.com',
+              snippet: result
+            };
+          }
+          return {
+            title: result.title || `Result for "${query}"`,
+            link: result.link || '#',
+            snippet: result.snippet || result.source || result.date || 'No description available'
+          };
+        });
       }
       
       // Handle non-array results
